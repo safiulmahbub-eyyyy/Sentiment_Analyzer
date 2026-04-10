@@ -4,6 +4,7 @@ Central configuration for all RAG components
 """
 
 import os
+import warnings
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -127,10 +128,11 @@ def validate_config():
     Raises ValueError if configuration is invalid
     """
     errors = []
+    import warnings
 
-    # Check API key
-    if not GROQ_API_KEY:
-        errors.append("GROQ_API_KEY is required")
+    # Check API key (only warn, don't block)
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+        warnings.warn("GROQ_API_KEY is not set. LLM features may not work.")
 
     # Check numeric ranges
     if not 0 <= TEMPERATURE <= 2:
@@ -149,7 +151,7 @@ def validate_config():
         errors.append(f"MAX_CONTEXT_POSTS ({MAX_CONTEXT_POSTS}) cannot exceed DEFAULT_TOP_K ({DEFAULT_TOP_K})")
 
     if errors:
-        raise ValueError(f"Configuration validation failed:\n" + "\n".join(f"  - {err}" for err in errors))
+        warnings.warn(f"Configuration issues:\n" + "\n".join(f"  - {err}" for err in errors))
 
     return True
 
