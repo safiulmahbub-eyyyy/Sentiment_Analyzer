@@ -1,0 +1,89 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables (SECRETS!)
+.env
+*.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Claude Code Documentation (local only)
+CLAUDE.md
+SUPABASE_MIGRATION_GUIDE.md
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+database/*.db
+!database/__init__.py
+
+# Logs
+logs/
+*.log
+
+# Data files
+data/*.json
+data/*.csv
+data/raw/*.json
+data/raw/*.csv
+!data/.gitkeep
+!data/raw/.gitkeep
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Temporary
+*.tmp
+*.temp
+*.bakproject_structure.txt
+backup-before-cleanup.bundle
+.claude
