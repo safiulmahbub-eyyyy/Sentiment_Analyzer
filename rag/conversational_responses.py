@@ -25,13 +25,13 @@ def handle_meta_question(question: str) -> Dict[str, Any]:
 
 **What I Can Do:**
 - Answer questions about consumer sentiment on electronics products (phones, laptops, gaming devices, etc.)
-- Analyze Reddit discussions from 20+ tech subreddits
+- Analyze Amazon product reviews from various categories
 - Compare products based on real user experiences
 - Identify common issues and problems users face
 - Provide recommendations based on community sentiment
 
 **How I Work:**
-I search through 38,000+ Reddit posts with sentiment analysis, find the most relevant discussions using AI, and synthesize insights to answer your questions.
+I search through Amazon product reviews with sentiment analysis, find the most relevant reviews using AI, and synthesize insights to answer your questions.
 
 **Example Questions You Can Ask:**
 - "What do people think about iPhone 15?"
@@ -41,7 +41,7 @@ I search through 38,000+ Reddit posts with sentiment analysis, find the most rel
 - "How is the Samsung phone battery life?"
 
 **Data Sources:**
-r/iphone, r/apple, r/samsung, r/android, r/laptops, r/buildapc, r/pcmasterrace, r/gaming, r/mechanicalkeyboards, and more!
+Amazon product reviews for electronics including phones, laptops, headphones, cameras, and more!
 
 Ask me anything about consumer electronics sentiment!"""
 
@@ -63,7 +63,7 @@ Ask me anything about consumer electronics sentiment!"""
 
 GREETING_TEMPLATES = [
     "Hello! I'm your consumer electronics sentiment assistant. Ask me about phones, laptops, gaming gear, or any tech product!",
-    "Hi there! I analyze Reddit discussions about consumer electronics. What would you like to know about?",
+    "Hi there! I analyze Amazon product reviews about consumer electronics. What would you like to know about?",
     "Hey! Ready to help you understand what people think about tech products. What's on your mind?",
     "Greetings! I specialize in analyzing consumer sentiment on electronics. How can I help you today?",
 ]
@@ -131,7 +131,7 @@ def handle_out_of_scope(question: str) -> Dict[str, Any]:
     # Get example questions
     example_questions_text = '\n'.join(f'- "{q}"' for q in get_example_questions(3))
 
-    answer = f"""I'm specialized in analyzing consumer sentiment about electronics products based on Reddit discussions.
+    answer = f"""I'm specialized in analyzing consumer sentiment about electronics products based on Amazon product reviews.
 
 Your question seems to be outside my expertise area (consumer electronics).
 
@@ -165,7 +165,7 @@ Would you like to know about any consumer electronics products?"""
 
 def handle_no_results(question: str, attempted_filters: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Generate helpful response when no Reddit posts match the query
+    Generate helpful response when no Amazon reviews match the query
 
     Args:
         question: User's question that found no results
@@ -180,7 +180,7 @@ def handle_no_results(question: str, attempted_filters: Dict[str, Any] = None) -
     # Format similar questions
     similar_questions_text = '\n'.join(f'{i+1}. "{q}"' for i, q in enumerate(similar_questions))
 
-    answer = f"""I couldn't find relevant Reddit discussions matching your question: "{question}"
+    answer = f"""I couldn't find relevant Amazon product reviews matching your question: "{question}"
 
 **This Could Mean:**
 - The specific product/topic hasn't been discussed much in our database
@@ -197,7 +197,7 @@ def handle_no_results(question: str, attempted_filters: Dict[str, Any] = None) -
 - General sentiment or comparisons
 
 **Database Coverage:**
-38,000+ Reddit posts from 20 tech subreddits, focusing on consumer electronics.
+5,000+ Amazon product reviews for consumer electronics.
 
 Would you like to try a different question?"""
 
@@ -205,7 +205,7 @@ Would you like to try a different question?"""
     if attempted_filters:
         filter_info = []
         if attempted_filters.get('subreddit_filter'):
-            filter_info.append(f"Subreddit: r/{attempted_filters['subreddit_filter']}")
+            filter_info.append(f"Product: {attempted_filters['subreddit_filter']}")
         if attempted_filters.get('sentiment_filter'):
             filter_info.append(f"Sentiment: {attempted_filters['sentiment_filter']}")
         if attempted_filters.get('days_ago'):

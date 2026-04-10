@@ -80,7 +80,7 @@ def generate_answer(
     if not retrieved_posts:
         return {
             'answer': "I don't have any relevant information to answer this question. "
-                     "No Reddit discussions matched your query.",
+                     "No Amazon reviews matched your query.",
             'sources': [],
             'metadata': {
                 'posts_used': 0,
@@ -197,7 +197,7 @@ def generate_answer_with_sources_formatted(
         >>> output = generate_answer_with_sources_formatted(question, posts)
         >>> print(output)
         ANSWER:
-        Based on Reddit discussions...
+        Based on Amazon reviews...
 
         SOURCES:
         1. [r/iphone] iPhone 15 Pro battery life is amazing!
@@ -222,13 +222,13 @@ def generate_answer_with_sources_formatted(
             sentiment = post.get('sentiment_label', 'unknown')
             similarity = post.get('similarity', 0)
 
-            output += f"{i}. [r/{subreddit}] ({sentiment.upper()}, relevance: {similarity:.2f})\n"
+            output += f"{i}. [{subreddit}] ({sentiment.upper()}, relevance: {similarity:.2f})\n"
             output += f"   {title}\n"
 
-            # Add Reddit link if available
-            permalink = post.get('permalink')
-            if permalink:
-                output += f"   https://reddit.com{permalink}\n"
+            # Add Amazon link if available
+            product_url = post.get('product_url')
+            if product_url:
+                output += f"   {product_url}\n"
 
             output += "\n"
 

@@ -150,7 +150,7 @@ class RAGPipeline:
         Example (single turn):
             >>> result = pipeline.query("What do people think about iPhone 15?")
             >>> print(result['answer'])
-            Based on Reddit discussions, users generally...
+            Based on Amazon reviews, users generally...
 
         Example (follow-up with history):
             >>> history = [
@@ -326,11 +326,11 @@ class RAGPipeline:
             >>> print(output)
             ANSWER:
             ======================================
-            Based on Reddit discussions...
+            Based on Amazon reviews...
 
             SOURCES:
             ======================================
-            1. [r/laptops] ...
+            1. [Apple iPhone] ...
         """
         # Get retrieval parameters
         top_k = kwargs.pop('top_k', DEFAULT_TOP_K)

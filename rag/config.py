@@ -32,7 +32,7 @@ MIN_SIMILARITY_THRESHOLD = 0.5  # Minimum cosine similarity (0-1)
 # Metadata filtering defaults
 DEFAULT_DATE_RANGE_DAYS = 365  # Look back 1 year by default
 ENABLE_SENTIMENT_FILTER = True  # Allow filtering by sentiment
-ENABLE_SUBREDDIT_FILTER = True  # Allow filtering by subreddit
+ENABLE_SUBREDDIT_FILTER = True  # Allow filtering by product
 
 # ============================================================
 # LLM CONFIGURATION (GROQ)
@@ -77,8 +77,8 @@ RETRY_DELAY = 2  # Seconds between retries
 MAX_CONTEXT_POSTS = 10  # Use top 10 most relevant (from top_k retrieved)
 
 # Context formatting
-INCLUDE_METADATA = True  # Include subreddit, sentiment, score in context
-INCLUDE_POST_SCORES = True  # Include Reddit upvote scores
+INCLUDE_METADATA = True  # Include product, sentiment, helpfulness in context
+INCLUDE_POST_SCORES = True  # Include review helpfulness scores
 INCLUDE_SIMILARITY_SCORES = True  # Include vector similarity scores
 
 # Context length management

@@ -35,22 +35,22 @@ def get_system_prompt(style: str = RESPONSE_STYLE) -> str:
 Your role is to answer questions about consumer opinions, experiences, and sentiment regarding consumer electronics products (smartphones, laptops, gaming devices, etc.) based STRICTLY AND ONLY on the Amazon product reviews provided to you.
 
 Key responsibilities:
-1. Analyze the provided Reddit posts carefully
-2. Answer questions ONLY using information present in the posts
-3. Cite specific posts using inline numbers [Post #X] for every claim
+1. Analyze the provided Amazon reviews carefully
+2. Answer questions ONLY using information present in the reviews
+3. Cite specific reviews using inline numbers [Post #X] for every claim
 4. Provide balanced analysis with PROS and CONS clearly structured
 5. For comparison or purchase questions, give a practical recommendation/verdict
 6. Be helpful and actionable within the constraints of available data
 
 CRITICAL - STRICT GROUNDING RULES (FOLLOW THESE EXACTLY):
-❌ NEVER invent, assume, or synthesize information not in the provided posts
-❌ NEVER mention products, models, or features not discussed in the posts
-❌ NEVER use general knowledge about products - ONLY use what's in the posts
+❌ NEVER invent, assume, or synthesize information not in the provided reviews
+❌ NEVER mention products, models, or features not discussed in the reviews
+❌ NEVER use general knowledge about products - ONLY use what's in the reviews
 ❌ NEVER make inferences about products not mentioned in the retrieved data
 ✅ ONLY use facts, opinions, and experiences from the provided Amazon reviews
-✅ If specific information is missing, explicitly state: "I don't have information about [topic] in my Reddit dataset"
-✅ If a product isn't mentioned, say so clearly: "I don't have discussions about [product] in the provided posts"
-✅ Distinguish clearly between what IS in posts vs what ISN'T available
+✅ If specific information is missing, explicitly state: "I don't have information about [topic] in my Amazon reviews dataset"
+✅ If a product isn't mentioned, say so clearly: "I don't have reviews about [product] in the provided posts"
+✅ Distinguish clearly between what IS in reviews vs what ISN'T available
 
 Important guidelines for COMPARISON questions:
 - Structure answer as: Brief intro → Pros of Option A → Cons of Option A → Pros of Option B → Cons of Option B → Verdict/Recommendation
@@ -71,7 +71,7 @@ Important guidelines for all answers:
 """
 
     if ALLOW_NO_ANSWER:
-        base_prompt += """- MUST say "I don't have enough information about [topic] in my Reddit dataset" when posts don't address the question
+        base_prompt += """- MUST say "I don't have enough information about [topic] in my Amazon reviews dataset" when reviews don't address the question
 - Better to admit data gaps than make unsupported claims
 """
 
@@ -115,23 +115,23 @@ def format_post_for_context(post: Dict[str, Any], post_number: int) -> str:
     similarity = post.get('similarity', 0)
     score = post.get('score', 0)
 
-    # Build formatted post
-    formatted = f"--- POST #{post_number} ---\n"
-    formatted += f"Source: r/{subreddit}\n"
+    # Build formatted review
+    formatted = f"--- REVIEW #{post_number} ---\n"
+    formatted += f"Product: {subreddit}\n"
 
     if INCLUDE_METADATA:
         formatted += f"Sentiment: {sentiment.upper()}\n"
         formatted += f"Relevance Score: {similarity:.2f}\n"
-        formatted += f"Reddit Score: {score} upvotes\n"
+        formatted += f"Helpfulness: {score} found helpful\n"
 
-    formatted += f"\nTitle: {title}\n"
+    formatted += f"\nReview: {title}\n"
 
     if body and body.strip():
         # Limit body length for context efficiency
         max_body_length = 500
         if len(body) > max_body_length:
             body = body[:max_body_length] + "... [truncated]"
-        formatted += f"Content: {body}\n"
+        formatted += f"Details: {body}\n"
 
     formatted += "\n"
 
@@ -208,10 +208,10 @@ def format_user_prompt(question: str, context: str) -> str:
         prompt += "2. PROS and CONS for each option (cite sources for each point)\n"
         prompt += "3. Clear VERDICT/RECOMMENDATION based on the sentiment patterns\n\n"
 
-    prompt += "Answer based on the Reddit discussions provided above. "
+    prompt += "Answer based on the Amazon reviews provided above. "
 
     if REQUIRE_SOURCE_CITATION:
-        prompt += "Cite specific posts in your answer using the format [r/subreddit, Post #X]. "
+        prompt += "Cite specific reviews in your answer using the format [Post #X]. "
 
     prompt += "Be helpful and actionable in your response."
 
@@ -236,7 +236,7 @@ def build_comparison_prompt(product_a: str, product_b: str, posts: List[Dict[str
     """
     context = build_context_from_posts(posts)
 
-    question = f"""Based on the Reddit discussions provided, compare {product_a} and {product_b}.
+    question = f"""Based on the Amazon reviews provided, compare {product_a} and {product_b}.
 
 Please address:
 1. Overall sentiment for each product
@@ -244,7 +244,7 @@ Please address:
 3. Common complaints for each
 4. Which one users seem to prefer and why
 
-Cite specific posts to support your comparison."""
+Cite specific reviews to support your comparison."""
 
     return format_user_prompt(question, context)
 
@@ -262,7 +262,7 @@ def build_summary_prompt(topic: str, posts: List[Dict[str, Any]]) -> str:
     """
     context = build_context_from_posts(posts)
 
-    question = f"""Summarize the overall sentiment and key points from Reddit users about: {topic}
+    question = f"""Summarize the overall sentiment and key points from Amazon reviewers about: {topic}
 
 Please provide:
 1. Overall sentiment (positive/negative/mixed)
@@ -288,7 +288,7 @@ def build_troubleshooting_prompt(issue: str, posts: List[Dict[str, Any]]) -> str
     """
     context = build_context_from_posts(posts)
 
-    question = f"""Based on the Reddit discussions, what do users say about: {issue}
+    question = f"""Based on the Amazon reviews, what do users say about: {issue}
 
 Please identify:
 1. How common is this issue?
@@ -296,7 +296,7 @@ Please identify:
 3. Is this a known problem or defect?
 4. What's the general sentiment about this issue?
 
-Cite specific posts where users discuss solutions or experiences."""
+Cite specific reviews where users discuss solutions or experiences."""
 
     return format_user_prompt(question, context)
 
@@ -358,7 +358,7 @@ if __name__ == "__main__":
     # Test 2: Format single post
     print("\n[TEST 2] Format single post:")
     sample_post = {
-        'subreddit': 'iphone',
+        'subreddit': 'Apple iPhone',
         'title': 'iPhone 15 Pro battery life is amazing!',
         'selftext': 'I upgraded from iPhone 13 and the battery lasts all day with heavy use.',
         'sentiment_label': 'positive',
@@ -373,7 +373,7 @@ if __name__ == "__main__":
     sample_posts = [
         sample_post,
         {
-            'subreddit': 'apple',
+            'subreddit': 'Apple iPhone',
             'title': 'Battery draining fast on iPhone 15',
             'selftext': 'Anyone else experiencing rapid battery drain?',
             'sentiment_label': 'negative',
