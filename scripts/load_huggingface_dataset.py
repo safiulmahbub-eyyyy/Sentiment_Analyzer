@@ -1,7 +1,7 @@
 """
 Load Amazon Electronics Reviews into Supabase
-Uses McAuley-Lab/Amazon-Reviews-2023 dataset with Cell_Phones category
-Contains iPhone, Samsung, Android product reviews
+Uses bagadbilla/amazon-reviews-2023-trimmed dataset (Parquet format - works with Python 3.14)
+Contains Cell_Phones and Electronics categories with iPhone, Samsung, Android reviews
 
 Usage:
     python scripts/load_huggingface_dataset.py
@@ -15,7 +15,7 @@ from typing import List, Dict, Any
 
 print("="*60)
 print("AMAZON REVIEWS LOADER")
-print("McAuley-Lab Dataset - Cell Phones & Electronics")
+print("bagadbilla/amazon-reviews-2023-trimmed Dataset")
 print("="*60)
 print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -25,7 +25,7 @@ print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print("\n[STEP 1] Installing dependencies...")
 
 import subprocess
-subprocess.run([sys.executable, "-m", "pip", "install", "datasets", "pandas", "numpy", "transformers", "torch", "-q"], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", "datasets", "pandas", "numpy", "transformers", "torch", "supabase", "python-dotenv", "-q"], check=True)
 
 from datasets import load_dataset
 import pandas as pd
@@ -41,9 +41,8 @@ print("\n[STEP 2] Loading dataset from HuggingFace...")
 # Load Cell_Phones_and_Accessories (has iPhone, Samsung, Android reviews)
 print("Loading Cell_Phones_and_Accessories...")
 ds_cell = load_dataset(
-    "McAuley-Lab/Amazon-Reviews-2023", 
-    "raw_review_Cell_Phones_and_Accessories",
-    trust_remote_code=True,
+    "bagadbilla/amazon-reviews-2023-trimmed",
+    data_dir="Cell_Phones_and_Accessories",
     split="train"
 )
 print(f"[OK] Loaded {len(ds_cell):,} reviews")
@@ -51,9 +50,8 @@ print(f"[OK] Loaded {len(ds_cell):,} reviews")
 # Also load Electronics for laptops, tablets
 print("Loading Electronics...")
 ds_electronics = load_dataset(
-    "McAuley-Lab/Amazon-Reviews-2023",
-    "raw_review_Electronics", 
-    trust_remote_code=True,
+    "bagadbilla/amazon-reviews-2023-trimmed",
+    data_dir="Electronics",
     split="train"
 )
 print(f"[OK] Loaded {len(ds_electronics):,} reviews")
@@ -70,12 +68,11 @@ df_elec = ds_electronics.to_pandas()
 # Combine
 df = pd.concat([df_cell, df_elec], ignore_index=True)
 
-# Filter for quality
+# Filter for quality - has text content
 df = df[df['text'].str.len() > 30].reset_index(drop=True)
 
-# Sort by helpful votes for quality
-if 'helpful_vote' in df.columns:
-    df = df.sort_values('helpful_vote', ascending=False)
+# Sort by rating (higher = more helpful reviews often)
+df = df.sort_values('rating', ascending=False)
 
 # Limit to top reviews
 MAX_REVIEWS = 10000
@@ -136,8 +133,6 @@ print(f"[OK] Generated in {time.time() - start_time:.1f}s")
 # ============================================================
 print("\n[STEP 5] Inserting into Supabase...")
 
-subprocess.run([sys.executable, "-m", "pip", "install", "supabase", "-q"], check=True)
-
 from supabase import create_client
 from dotenv import load_dotenv
 
@@ -157,19 +152,14 @@ print("Transforming data...")
 posts = []
 
 for idx, (_, row) in enumerate(df.iterrows()):
-    asin = str(row.get('parent_asin', row.get('asin', 'unknown')))
+    # Get fields - this dataset has rating, title, text
+    asin = f"asin_{idx}"  # No asin in this dataset, create placeholder
     title = str(row.get('title', 'Untitled'))[:500]
     text = str(row.get('text', ''))[:2000]
     
     rating = row.get('rating', 3)
     if pd.isna(rating):
         rating = 3
-    
-    user_id = str(row.get('user_id', 'anonymous'))[:100]
-    timestamp = row.get('timestamp', 0)
-    helpful_vote = row.get('helpful_vote', 0)
-    if pd.isna(helpful_vote):
-        helpful_vote = 0
     
     # Use product title as identifier
     product_name = title[:50] if title else "unknown"
@@ -185,28 +175,19 @@ for idx, (_, row) in enumerate(df.iterrows()):
         sentiment = 'neutral'
         sp, sn, sneu, sc = 0.2, 0.2, 0.6, 0.0
     
-    # Convert timestamp
-    try:
-        ts = float(timestamp) if timestamp else 0
-        if ts > 1000000000000:
-            ts = ts / 1000
-        created = datetime.fromtimestamp(ts / 1000).isoformat() if 0 < ts < 2000000000000 else datetime.now().isoformat()
-    except:
-        created = datetime.now().isoformat()
-    
     post = {
         'post_id': f"amazon_{asin}_{idx}",
         'source': 'amazon_reviews',
         'subreddit': product_name,
         'title': title,
         'selftext': text,
-        'author': user_id,
-        'created_utc': created,
+        'author': 'anonymous',
+        'created_utc': datetime.now().isoformat(),
         'collected_at': datetime.now().isoformat(),
         'score': int(rating),
-        'num_comments': int(helpful_vote),
-        'url': f"https://www.amazon.com/dp/{asin}",
-        'permalink': f"/dp/{asin}",
+        'num_comments': 0,
+        'url': 'https://www.amazon.com',
+        'permalink': '/',
         'sentiment_pos': sp,
         'sentiment_neg': sn,
         'sentiment_neu': sneu,
