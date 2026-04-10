@@ -37,15 +37,16 @@ ENABLE_SUBREDDIT_FILTER = True  # Allow filtering by subreddit
 # LLM CONFIGURATION (GROQ)
 # ============================================================
 
+# Load .env file (for local development)
+load_dotenv()
+
 # Groq API settings
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_KEY", "")
+
+# Check if API key is available (allow empty for debugging)
 if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
-    raise ValueError(
-        "GROQ_API_KEY not found in environment variables.\n"
-        "For local development: Add GROQ_API_KEY to your .env file\n"
-        "For Streamlit Cloud: Add GROQ_API_KEY to app secrets in dashboard\n"
-        "Get your free API key from https://console.groq.com/"
-    )
+    # Will be handled at runtime
+    pass
 
 # Model selection
 # Current supported models (as of Nov 2025):

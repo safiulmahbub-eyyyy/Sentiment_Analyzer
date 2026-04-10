@@ -34,6 +34,15 @@ def get_groq_client() -> Groq:
     Returns:
         Groq client instance
     """
+    # Check if API key is available
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+        raise ValueError(
+            "GROQ_API_KEY not found. Please configure it in:\n"
+            "- .env file (local development)\n"
+            "- Streamlit Cloud secrets (deployment)\n"
+            "Get free API key from: https://console.groq.com/"
+        )
+
     if VERBOSE:
         print("[GROQ] Initializing Groq API client...")
 
