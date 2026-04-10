@@ -86,4 +86,4 @@ htmlcov/
 *.temp
 *.bakproject_structure.txt
 backup-before-cleanup.bundle
-.claude
+.claude.streamlit/secrets.toml
