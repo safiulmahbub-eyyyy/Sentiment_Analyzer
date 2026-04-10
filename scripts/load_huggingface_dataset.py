@@ -1,7 +1,7 @@
 """
 Load Amazon Electronics Reviews into Supabase
-Uses stephaniestv/Electronics_Product_Review_With_Sentiment dataset
-CSV download from HuggingFace - works without datasets library
+Uses McAuley-Lab/Amazon-Reviews-2023 dataset with Cell_Phones category
+Contains iPhone, Samsung, Android product reviews
 
 Usage:
     python scripts/load_huggingface_dataset.py
@@ -15,7 +15,7 @@ from typing import List, Dict, Any
 
 print("="*60)
 print("AMAZON REVIEWS LOADER")
-print("Electronics Product Reviews with Sentiment")
+print("McAuley-Lab Dataset - Cell Phones & Electronics")
 print("="*60)
 print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -25,49 +25,59 @@ print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print("\n[STEP 1] Installing dependencies...")
 
 import subprocess
-subprocess.run([sys.executable, "-m", "pip", "install", "requests", "pandas", "numpy", "-q"], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", "datasets", "pandas", "numpy", "transformers", "torch", "-q"], check=True)
 
-import requests
+from datasets import load_dataset
 import pandas as pd
 import numpy as np
+import torch
+from transformers import AutoTokenizer, AutoModel
 
 # ============================================================
-# Step 2: Download from HuggingFace (direct CSV)
+# Step 2: Load dataset from HuggingFace
 # ============================================================
-print("\n[STEP 2] Downloading dataset from HuggingFace...")
+print("\n[STEP 2] Loading dataset from HuggingFace...")
 
-# Direct CSV URL from stephaniestv dataset
-CSV_URL = "https://huggingface.co/datasets/stephaniestv/Electronics_Product_Review_With_Sentiment/resolve/main/amazon_electronics_review_sentiment.csv"
+# Load Cell_Phones_and_Accessories (has iPhone, Samsung, Android reviews)
+print("Loading Cell_Phones_and_Accessories...")
+ds_cell = load_dataset(
+    "McAuley-Lab/Amazon-Reviews-2023", 
+    "raw_review_Cell_Phones_and_Accessories",
+    trust_remote_code=True,
+    split="train"
+)
+print(f"[OK] Loaded {len(ds_cell):,} reviews")
 
-temp_file = "/tmp/amazon_reviews.csv"
-
-if not os.path.exists(temp_file):
-    print("Downloading CSV file...")
-    response = requests.get(CSV_URL, stream=True)
-    response.raise_for_status()
-    
-    with open(temp_file, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=8*1024*1024):
-            if chunk:
-                f.write(chunk)
-    print(f"[OK] Downloaded to {temp_file}")
-
-df = pd.read_csv(temp_file)
-print(f"[OK] Loaded {len(df):,} reviews")
+# Also load Electronics for laptops, tablets
+print("Loading Electronics...")
+ds_electronics = load_dataset(
+    "McAuley-Lab/Amazon-Reviews-2023",
+    "raw_review_Electronics", 
+    trust_remote_code=True,
+    split="train"
+)
+print(f"[OK] Loaded {len(ds_electronics):,} reviews")
 
 # ============================================================
-# Step 3: Filter and limit
+# Step 3: Process and filter
 # ============================================================
 print("\n[STEP 3] Processing data...")
+
+# Convert to DataFrame
+df_cell = ds_cell.to_pandas()
+df_elec = ds_electronics.to_pandas()
+
+# Combine
+df = pd.concat([df_cell, df_elec], ignore_index=True)
 
 # Filter for quality
 df = df[df['text'].str.len() > 30].reset_index(drop=True)
 
-# Sort by helpful votes
-if 'helpful_vote' df.columns:
+# Sort by helpful votes for quality
+if 'helpful_vote' in df.columns:
     df = df.sort_values('helpful_vote', ascending=False)
 
-# Limit
+# Limit to top reviews
 MAX_REVIEWS = 10000
 df = df.head(MAX_REVIEWS).reset_index(drop=True)
 print(f"[OK] Using {len(df):,} reviews")
@@ -76,11 +86,6 @@ print(f"[OK] Using {len(df):,} reviews")
 # Step 4: Generate embeddings
 # ============================================================
 print("\n[STEP 4] Generating embeddings...")
-
-subprocess.run([sys.executable, "-m", "pip", "install", "transformers", "torch", "-q"], check=True)
-
-from transformers import AutoTokenizer, AutoModel
-import torch
 
 MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 
@@ -152,11 +157,10 @@ print("Transforming data...")
 posts = []
 
 for idx, (_, row) in enumerate(df.iterrows()):
-    asin = str(row.get('asin', 'unknown'))
+    asin = str(row.get('parent_asin', row.get('asin', 'unknown')))
     title = str(row.get('title', 'Untitled'))[:500]
     text = str(row.get('text', ''))[:2000]
     
-    # Get fields
     rating = row.get('rating', 3)
     if pd.isna(rating):
         rating = 3
@@ -167,16 +171,18 @@ for idx, (_, row) in enumerate(df.iterrows()):
     if pd.isna(helpful_vote):
         helpful_vote = 0
     
-    # Use parent_asin as product ID
-    product_id = str(row.get('parent_asin', asin))[:50]
+    # Use product title as identifier
+    product_name = title[:50] if title else "unknown"
     
-    # Get sentiment from dataset
-    sentiment = str(row.get('review_sentiment', 'neutral')).lower()
-    if sentiment == 'positive':
+    # Convert rating to sentiment
+    if rating >= 4:
+        sentiment = 'positive'
         sp, sn, sneu, sc = 0.8, 0.1, 0.1, 0.75
-    elif sentiment == 'negative':
+    elif rating <= 2:
+        sentiment = 'negative'
         sp, sn, sneu, sc = 0.1, 0.8, 0.1, -0.75
     else:
+        sentiment = 'neutral'
         sp, sn, sneu, sc = 0.2, 0.2, 0.6, 0.0
     
     # Convert timestamp
@@ -184,14 +190,14 @@ for idx, (_, row) in enumerate(df.iterrows()):
         ts = float(timestamp) if timestamp else 0
         if ts > 1000000000000:
             ts = ts / 1000
-        created = datetime.fromtimestamp(ts).isoformat() if 0 < ts < 2000000000 else datetime.now().isoformat()
+        created = datetime.fromtimestamp(ts / 1000).isoformat() if 0 < ts < 2000000000000 else datetime.now().isoformat()
     except:
         created = datetime.now().isoformat()
     
     post = {
         'post_id': f"amazon_{asin}_{idx}",
         'source': 'amazon_reviews',
-        'subreddit': product_id,
+        'subreddit': product_name,
         'title': title,
         'selftext': text,
         'author': user_id,
@@ -235,5 +241,5 @@ print(f"[VERIFIED] Total in database: {result.count}")
 
 print("\n" + "="*60)
 print("COMPLETE!")
-print(f"Loaded {success} Amazon electronics reviews")
+print(f"Loaded {success} reviews with iPhone/Samsung/Android")
 print("="*60)
