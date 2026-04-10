@@ -10,6 +10,14 @@ import time
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 
+# Load Streamlit Cloud secrets into environment variables
+try:
+    if hasattr(st, 'secrets') and st.secrets:
+        for key in st.secrets:
+            os.environ[key] = st.secrets[key]
+except Exception:
+    pass  # locally, st.secrets may not be available
+
 # Diagnostic info for Streamlit Cloud debugging
 if os.getenv("STREAMLIT_SHARING") or os.getenv("STREAMLIT_CLOUD"):
     print("=" * 60)
