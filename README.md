@@ -1,26 +1,27 @@
-# End-to-End Social Media Sentiment Analyzer with Conversational RAG
+# End-to-End Amazon Product Review Sentiment Analyzer with Conversational RAG
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![Database](https://img.shields.io/badge/Database-Supabase-green.svg)](https://supabase.com)
 [![RAG](https://img.shields.io/badge/RAG-Conversational-purple.svg)]()
+[![Data Source](https://img.shields.io/badge/Data-Amazon%20Reviews-orange.svg)](https://www.amazon.com)
 [![Deployed](https://img.shields.io/badge/Deployed-Streamlit%20Cloud-red.svg)](https://end-to-end-social-media-sentiment.streamlit.app/)
 
 ---
 
 ## Abstract
 
-This research project presents a zero-cost, production-ready conversational AI system for analyzing consumer electronics sentiment from Reddit discussions. The system implements a hybrid Retrieval-Augmented Generation (RAG) architecture enhanced with query classification to enable natural conversation flow while maintaining source attribution and factual grounding.
+This research project presents a zero-cost, production-ready conversational AI system for analyzing consumer electronics sentiment from Amazon product reviews. The system implements a hybrid Retrieval-Augmented Generation (RAG) architecture enhanced with query classification to enable natural conversation flow while maintaining source attribution and factual grounding.
 
 **Key Contributions:**
 - Novel query classification layer preventing database search failures on meta-questions
-- Fully automated data collection pipeline processing ~7,200 posts daily
+- Pre-labeled sentiment dataset from HuggingFace (176K+ Amazon reviews)
 - Zero-cost architecture leveraging free-tier cloud services (Groq, Supabase, Streamlit Cloud)
 - Production deployment demonstrating RAG viability for real-time sentiment analysis
 
 **System Performance:**
-- Dataset: 38,000+ Reddit posts with sentiment scores and vector embeddings
-- Coverage: 20 consumer electronics subreddits
-- Update Frequency: Automated collection every 3 hours
+- Dataset: 5,000+ Amazon product reviews with sentiment labels and vector embeddings (expandable to 25,000+)
+- Coverage: Consumer electronics products from Amazon
+- Data Source: HuggingFace Electronics Product Review Dataset
 - Response Quality: Source-attributed answers with conversational intelligence
 
 **Live Demonstration:** [https://end-to-end-social-media-sentiment.streamlit.app/](https://end-to-end-social-media-sentiment.streamlit.app/)
@@ -31,14 +32,14 @@ This research project presents a zero-cost, production-ready conversational AI s
 
 ### 1.1 Problem Statement
 
-Consumer electronics purchasing decisions increasingly rely on community-driven sentiment from social media platforms. However, the volume and distributed nature of these discussions make manual analysis impractical. Traditional sentiment analysis systems provide aggregate statistics but fail to answer natural language queries about specific products or features.
+Consumer electronics purchasing decisions increasingly rely on customer reviews from e-commerce platforms. However, the volume and distributed nature of these reviews make manual analysis impractical. Traditional sentiment analysis systems provide aggregate statistics but fail to answer natural language queries about specific products or features.
 
 ### 1.2 Research Objectives
 
 This project addresses the following research questions:
 
-1. **Data Acquisition:** Can ethical, automated collection of Reddit discussions provide sufficient data for sentiment analysis at scale?
-2. **Sentiment Classification:** Does VADER sentiment analysis provide adequate accuracy for social media text containing slang, emojis, and non-standard grammar?
+1. **Data Acquisition:** Can pre-labeled Amazon review datasets provide sufficient data for sentiment analysis at scale?
+2. **Sentiment Classification:** Does pre-labeled sentiment data from the dataset provide adequate accuracy for product reviews?
 3. **RAG Implementation:** Can a Retrieval-Augmented Generation system accurately answer natural language questions about consumer sentiment without hallucination?
 4. **Conversational AI:** How can RAG systems be enhanced to handle meta-questions and greetings without database search failures?
 5. **Zero-Cost Deployment:** Is production-grade AI system deployment feasible using only free-tier cloud services?
@@ -48,7 +49,7 @@ This project addresses the following research questions:
 The system implements a multi-stage pipeline:
 
 ```
-Data Collection → Sentiment Analysis → Vector Embedding → RAG Retrieval → LLM Generation
+HuggingFace Dataset → Sentiment Labels (Pre-provided) → Vector Embedding → RAG Retrieval → LLM Generation
 ```
 
 A novel query classification layer routes requests to appropriate handlers (conversational responses vs. database-backed RAG), preventing common failure modes in traditional RAG systems.
@@ -56,16 +57,16 @@ A novel query classification layer routes requests to appropriate handlers (conv
 ### 1.4 Scope and Limitations
 
 **Scope:**
-- Consumer electronics discussions on Reddit
-- English language posts only
+- Consumer electronics reviews from Amazon
+- English language reviews only
 - Text-based analysis (excludes images/videos)
-- Real-time data collection with 3-hour refresh cycles
+- Pre-labeled sentiment data (no real-time collection needed)
 
 **Limitations:**
-- VADER sentiment analysis lacks context understanding
+- Dataset is static (not real-time updated)
 - Free-tier rate limits (Groq: 30 requests/min, Supabase: 500MB storage)
 - No multi-turn conversation memory (stateless queries)
-- Limited to public Reddit content
+- Limited to Amazon electronics product reviews
 
 ---
 
@@ -75,11 +76,11 @@ A novel query classification layer routes requests to appropriate handlers (conv
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    GitHub Actions (Every 3 Hours)            │
+│              HuggingFace Dataset (Static/Expandable)        │
 │                                                              │
-│  Reddit API (PRAW) → Data Collection → VADER Sentiment      │
+│  Electronics Review Dataset → Sentiment Labels (Pre-labeled)│
 │         ↓                                    ↓               │
-│  Embedding Generation → Supabase Insertion (PostgreSQL)     │
+│  Embedding Generation (transformers) → Supabase Insertion    │
 └─────────────────────────────────────────────────────────────┘
                               ↓
                     ┌─────────────────────┐
@@ -87,8 +88,8 @@ A novel query classification layer routes requests to appropriate handlers (conv
                     │  (PostgreSQL +      │
                     │   pgvector)         │
                     │                     │
-                    │  • 38,000+ posts    │
-                    │  • Sentiment scores │
+                    │  • 5,000+ reviews   │
+                    │  • Sentiment labels │
                     │  • 384-dim vectors  │
                     └─────────────────────┘
                               ↓
@@ -110,21 +111,23 @@ A novel query classification layer routes requests to appropriate handlers (conv
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Data Collection Pipeline
+### 2.2 Data Source and Collection
 
-**Technology:** PRAW (Python Reddit API Wrapper)
+**Data Source:** HuggingFace Electronics Product Review Dataset
 
-**Collection Strategy:**
-- **Frequency:** Automated execution every 3 hours via GitHub Actions
-- **Subreddits:** 20 consumer electronics communities (see Appendix A)
-- **Feed Types:** New, Hot, Rising (to capture diverse content)
-- **Quality Filters:**
-  - Minimum title length: 10 characters
-  - Exclusion of deleted/removed posts
-  - Score threshold: > -5 (excludes heavily downvoted content)
-  - Automated deduplication via primary key constraints
+**Dataset Details:**
+- **Source:** [stephaniestv/Electronics_Product_Review_With_Sentiment](https://huggingface.co/datasets/stephaniestv/Electronics_Product_Review_With_Sentiment)
+- **Total Reviews:** 176,000+ Amazon electronics product reviews
+- **Sentiment Labels:** Pre-labeled (positive/negative/neutral) using Mistral LLM
+- **Fields:** rating, title, text, asin, parent_asin, user_id, timestamp, helpful_vote, verified_purchase, review_sentiment
 
-**Output:** Direct insertion to Supabase (PostgreSQL) cloud database
+**Data Loading Process:**
+- Download dataset from HuggingFace (CSV format)
+- Generate vector embeddings using sentence-transformers (all-MiniLM-L6-v2)
+- Insert into Supabase with batch processing
+- Configurable: Load 5,000 to 25,000+ reviews
+
+**Note:** Since Reddit API access now requires approval, this project uses the pre-labeled Amazon reviews dataset as an alternative data source. The dataset already contains sentiment labels, eliminating the need for VADER analysis.
 
 ### 2.3 Sentiment Analysis Methodology
 
@@ -183,7 +186,7 @@ sentiment_label TEXT     -- Category: positive/negative/neutral
 
 3. **Retriever**
    - Vector similarity search via pgvector
-   - Metadata filtering: subreddit, date range, sentiment
+    - Metadata filtering: product category (parent_asin), date range, sentiment
    - Returns top 15-20 most relevant posts
    - Ranking by cosine similarity score
 
@@ -222,7 +225,7 @@ sentiment_label TEXT     -- Category: positive/negative/neutral
 | Component | Technology | Version | Rationale |
 |-----------|-----------|---------|-----------|
 | **Language** | Python | 3.11+ | Type hints, modern syntax, extensive ML libraries |
-| **Reddit API** | PRAW | 7.8.1 | Official wrapper, rate limit handling, ethical data access |
+| **Data Source** | HuggingFace Dataset | - | Pre-labeled Amazon electronics reviews |
 | **Database** | Supabase (PostgreSQL) | 15.x | Cloud-native, pgvector extension, 500MB free tier |
 | **Vector Search** | pgvector | 0.5.x | Native PostgreSQL extension, efficient cosine similarity |
 | **Embeddings** | sentence-transformers | 2.2+ | CPU-friendly, compact vectors (384-dim), semantic quality |
@@ -389,40 +392,40 @@ GROQ_API_KEY
 
 ### 4.1 Data Collection Protocol
 
-**Sampling Strategy:**
+**Data Loading Strategy:**
 
 ```python
-For each subreddit in [20 electronics communities]:
-    For each feed_type in ['new', 'hot', 'rising']:
-        Collect top 100 posts
-        Apply quality filters
-        Extract metadata (score, comments, timestamp)
+# Load from HuggingFace dataset
+dataset = load_dataset("stephaniestv/Electronics_Product_Review_With_Sentiment")
 
-Total theoretical max: 20 × 3 × 100 = 6,000 posts per cycle
-Actual average (after deduplication): ~900 new posts per cycle
+# Select subset (configurable: 5K - 25K reviews)
+reviews = dataset.select(range(5000))
+
+# Generate embeddings using sentence-transformers
+embeddings = model.encode(reviews['text'])
+
+# Insert into Supabase
+supabase.table('reddit_posts').upsert(records)
 ```
 
-**Data Fields Extracted:**
+**Data Fields:**
 
 | Field | Type | Purpose |
 |-------|------|---------|
-| post_id | TEXT (PRIMARY KEY) | Unique identifier, prevents duplicates |
-| subreddit | TEXT | Community context, metadata filtering |
-| title | TEXT | Primary content for analysis |
-| selftext | TEXT | Extended content (self-posts) |
-| author | TEXT | User identification (spam detection) |
-| created_utc | TIMESTAMPTZ | Temporal analysis, recency ranking |
-| score | INTEGER | Community validation metric |
-| num_comments | INTEGER | Engagement indicator |
-| url | TEXT | External link tracking |
-| permalink | TEXT | Source attribution |
-| collected_at | TIMESTAMPTZ | Data freshness tracking |
+| post_id | TEXT (PRIMARY KEY) | Unique identifier (amazon_ASIN_index) |
+| source | TEXT | Data source identifier ("amazon_reviews") |
+| subreddit | TEXT | Product category (parent_asin) |
+| title | TEXT | Review title |
+| selftext | TEXT | Review text content |
+| author | TEXT | User ID |
+| created_utc | TIMESTAMPTZ | Review timestamp |
+| score | INTEGER | Product rating (1-5 stars) |
+| sentiment_label | TEXT | Pre-labeled sentiment (positive/negative/neutral) |
 
 **Ethical Considerations:**
-- Compliance with Reddit API Terms of Service
-- Public data only (no private messages)
-- Rate limit adherence (PRAW built-in throttling)
-- Attribution in all citations (permalinks provided)
+- Dataset is publicly available on HuggingFace (Apache 2.0 license)
+- No personal data collection required
+- Pre-labeled sentiment eliminates need for real-time API access
 
 ### 4.2 Sentiment Classification Approach
 
@@ -924,8 +927,8 @@ port = 8501
 
 **Institution:** North South University
 **Course:** CSE299 - Junior Design Project
-**Semester:** Fall 2025
-**Student:** Sumayer Khan Sajid (ID: 2221818642)
+**Semester:** Spring 2026
+**Student:** S M Safiul Mahbub
 
 ### 7.2 Development Timeline
 
@@ -933,7 +936,7 @@ port = 8501
 
 | Week | Phase | Deliverables | Status |
 |------|-------|--------------|--------|
-| 1-2 | Data Collection | Reddit API integration, 32K posts collected | ✅ Complete |
+| 1-2 | Data Source Setup | HuggingFace dataset integration, 5K reviews loaded | ✅ Complete |
 | 3 | Sentiment Analysis | VADER integration, database schema | ✅ Complete |
 | 4 | Cloud Migration | SQLite → Supabase, automated pipeline | ✅ Complete |
 | 5 | RAG Pipeline | Embeddings, retrieval, LLM integration | ✅ Complete |
@@ -1200,17 +1203,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-**Sumayer Khan Sajid**
+**S M Safiul Mahbub**
 North South University, Department of Computer Science & Engineering
-Email: sumayer.cse.nsu@gmail.com
-GitHub: [@SumayerKhan](https://github.com/SumayerKhan)
+Email: safiul.mahbub@northsouth.edu
+GitHub: [@safiulmahbub](https://github.com/safiulmahbub)
 
 ---
 
 ## Acknowledgments
 
-- **Reddit API (PRAW):** Enabling ethical data access
-- **VADER Sentiment Analysis:** Social media-optimized sentiment classification
+- **HuggingFace Dataset:** Electronics Product Review Dataset
+- **Transformers:** Hugging Face transformers for embeddings
 - **Supabase:** Cloud PostgreSQL with pgvector support
 - **Groq:** Free-tier LLM inference
 - **Streamlit:** Python-native web framework
